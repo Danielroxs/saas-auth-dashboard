@@ -9,7 +9,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
 
   const [newUser, setNewUser] = useState({ name: "", avatar: "" });
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
 
   type User = {
@@ -18,6 +18,8 @@ export default function DashboardPage() {
     avatar: string;
   };
 
+  const [users, setUsers] = useState<User[]>([]);
+
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (editUser) {
@@ -25,7 +27,7 @@ export default function DashboardPage() {
       await fetch(
         `https://699e004683e60a406a47f96c.mockapi.io/api/v1/users/${editUser.id}`,
         {
-          method: "PUT",
+          method: "PUT", // o "PATCH"
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newUser),
         },
@@ -40,6 +42,7 @@ export default function DashboardPage() {
     }
     setNewUser({ name: "", avatar: "" });
     // Aqui deberia volver a cargar la lista de usuarios
+    fetchUsers();
   };
 
   const handleEditClick = (user: User) => {
@@ -47,16 +50,28 @@ export default function DashboardPage() {
     setNewUser({ name: user.name, avatar: user.avatar });
   };
 
-  const [users, setUsers] = useState<User[]>([]);
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
+    await fetch(
+      `https://699e004683e60a406a47f96c.mockapi.io/api/v1/users/${id}`,
+      {
+        method: "DELETE",
+      },
+    );
+    fetchUsers();
+  };
+
+  const fetchUsers = async () => {
+    const res = await fetch(
+      "https://699e004683e60a406a47f96c.mockapi.io/api/v1/users",
+    );
+    const data = await res.json();
+    setUsers(data);
+  };
 
   useEffect(() => {
-    fetch("https://699e004683e60a406a47f96c.mockapi.io/api/v1/users")
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Usuarios", data);
-        setUsers(data);
-      });
-  }, [newUser]);
+    fetchUsers();
+  }, []);
 
   const handleLogout = () => {
     logout(); // Limpia token y rol del store y localStorage
@@ -79,12 +94,24 @@ export default function DashboardPage() {
                 className="w-8 rounded-full"
               />
               <span>{user.name}</span>
-              <button
-                className="bg-yellow-500 text-white px-2 py-1 rounded"
-                onClick={() => handleEditClick(user)}
-              >
-                Editar
-              </button>
+
+              {role === "admin" && (
+                <>
+                  <button
+                    className="bg-yellow-500 text-white px-2 py-1 rounded"
+                    onClick={() => handleEditClick(user)}
+                  >
+                    Editar
+                  </button>
+
+                  <button
+                    className="bg-red-600 text-white px-2 py-1 rounded ml-2"
+                    onClick={() => handleDeleteUser(user.id)}
+                  >
+                    Eliminar
+                  </button>
+                </>
+              )}
             </li>
           ))}
         </ul>
