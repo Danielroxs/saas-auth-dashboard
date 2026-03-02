@@ -2,6 +2,9 @@ import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import UserForm from "../components/UserForm";
+import SearchInput from "../components/SearchInput";
+import Pagination from "../components/Pagination";
+import { toast } from "react-toastify";
 
 export default function DashboardPage() {
   const { role } = useAuthStore();
@@ -11,6 +14,20 @@ export default function DashboardPage() {
   const [newUser, setNewUser] = useState({ name: "", avatar: "" });
   const [loading] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [search, setSearch] = useState("");
+
+  const [users, setUsers] = useState<User[]>([]);
+
+  const filteredUsers = users.filter((user) =>
+    user.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
+  );
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 5;
+  const indexOfLastUser = currentPage * usersPerPage;
+  const indexOfFirstUser = indexOfLastUser - usersPerPage;
+  const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
   type User = {
     id: string;
@@ -18,31 +35,38 @@ export default function DashboardPage() {
     avatar: string;
   };
 
-  const [users, setUsers] = useState<User[]>([]);
-
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (editUser) {
-      // editar usuario (PUT)
-      await fetch(
-        `https://699e004683e60a406a47f96c.mockapi.io/api/v1/users/${editUser.id}`,
-        {
-          method: "PUT", // o "PATCH"
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newUser),
-        },
-      );
+    const isEditing = !!editUser;
+    try {
+      if (isEditing) {
+        // editar usuario (PUT)
+        await fetch(
+          `https://699e004683e60a406a47f96c.mockapi.io/api/v1/users/${editUser.id}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newUser),
+          },
+        );
+      } else {
+        await fetch(
+          "https://699e004683e60a406a47f96c.mockapi.io/api/v1/users",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(newUser),
+          },
+        );
+      }
+      toast.success(isEditing ? "Usuario actualizado" : "Usuario creado");
+      setNewUser({ name: "", avatar: "" });
       setEditUser(null);
-    } else {
-      await fetch("https://699e004683e60a406a47f96c.mockapi.io/api/v1/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
-      });
+      fetchUsers();
+    } catch (error) {
+      toast.error("Error al guardar usuario");
+      console.error(error);
     }
-    setNewUser({ name: "", avatar: "" });
-    // Aqui deberia volver a cargar la lista de usuarios
-    fetchUsers();
   };
 
   const handleEditClick = (user: User) => {
@@ -51,27 +75,43 @@ export default function DashboardPage() {
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
-    await fetch(
-      `https://699e004683e60a406a47f96c.mockapi.io/api/v1/users/${id}`,
-      {
-        method: "DELETE",
-      },
-    );
-    fetchUsers();
+    try {
+      if (!window.confirm("¿Seguro que quieres eliminar este usuario?")) return;
+      await fetch(
+        `https://699e004683e60a406a47f96c.mockapi.io/api/v1/users/${id}`,
+        {
+          method: "DELETE",
+        },
+      );
+      fetchUsers();
+      toast.success("Usuario eliminado");
+    } catch (error) {
+      toast.error("Error al eliminar usuario");
+      console.error(error);
+    }
   };
 
   const fetchUsers = async () => {
-    const res = await fetch(
-      "https://699e004683e60a406a47f96c.mockapi.io/api/v1/users",
-    );
-    const data = await res.json();
-    setUsers(data);
+    try {
+      const res = await fetch(
+        "https://699e004683e60a406a47f96c.mockapi.io/api/v1/users",
+      );
+      const data = await res.json();
+      setUsers(data);
+    } catch (error) {
+      toast.error("Error al obtener usuarios");
+      console.error(error);
+    }
   };
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
 
   const handleLogout = () => {
     logout(); // Limpia token y rol del store y localStorage
@@ -82,40 +122,60 @@ export default function DashboardPage() {
     <div className="p-8 flex flex-col mx-auto max-w-75 justify-center">
       <h1 className="text-4xl font-bold">Dashboard</h1>
       <p className="text-2xl mt-2 text-gray-600">Rol actual: {role}</p>
-      <p>Bienvenido al panel de administración.</p>
-      <div className="mt-8">
-        <h2 className="text-xl font-bold mb-2">Usuarios</h2>
-        <ul>
-          {users.map((user) => (
-            <li key={user.id} className="mb-2 flex items-center gap-2">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 rounded-full"
-              />
-              <span>{user.name}</span>
 
-              {role === "admin" && (
-                <>
-                  <button
-                    className="bg-yellow-500 text-white px-2 py-1 rounded"
-                    onClick={() => handleEditClick(user)}
-                  >
-                    Editar
-                  </button>
+      <SearchInput search={search} setSearch={handleSearchChange} />
 
-                  <button
-                    className="bg-red-600 text-white px-2 py-1 rounded ml-2"
-                    onClick={() => handleDeleteUser(user.id)}
-                  >
-                    Eliminar
-                  </button>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </div>
+      {filteredUsers.length === 0 ? (
+        <p className="text-gray-500 mt-4">
+          {search
+            ? "No se encontraron usuarios con ese nombre."
+            : "No hay usuarios disponibles."}
+        </p>
+      ) : (
+        <>
+          <ul>
+            {currentUsers.map((user) => (
+              <li key={user.id} className="mb-2 flex items-center gap-2">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-8 rounded-full"
+                />
+                <span>{user.name}</span>
+                {role === "admin" && (
+                  <>
+                    <button
+                      className="bg-yellow-500 text-white px-2 py-1 rounded"
+                      onClick={() => handleEditClick(user)}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="bg-red-600 text-white px-2 py-1 rounded ml-2"
+                      onClick={() => handleDeleteUser(user.id)}
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          {totalPages > 1 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPreviousClick={() =>
+                setCurrentPage((prev) => Math.max(prev - 1, 1))
+              }
+              onNextClick={() =>
+                setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+              }
+            />
+          )}
+        </>
+      )}
 
       <UserForm
         user={newUser}

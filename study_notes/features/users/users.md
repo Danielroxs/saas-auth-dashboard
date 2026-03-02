@@ -1,3 +1,105 @@
+# Paginación de usuarios
+
+Se implementó paginación para mejorar la experiencia de usuario y el rendimiento al listar grandes cantidades de usuarios.
+
+## 1. Estados y variables clave
+
+```ts
+const [currentPage, setCurrentPage] = useState(1);
+const usersPerPage = 5; // Ajustable según necesidad
+```
+
+## 2. Matemáticas de paginación
+
+Para calcular qué usuarios mostrar en cada página:
+
+```ts
+const indexOfLastUser = currentPage * usersPerPage;
+const indexOfFirstUser = indexOfLastUser - usersPerPage;
+const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+```
+
+**Ejemplo visual (12 usuarios, 5 por página):**
+
+- Página 1: índices 0-4 → `slice(0, 5)` → 5 usuarios
+- Página 2: índices 5-9 → `slice(5, 10)` → 5 usuarios
+- Página 3: índices 10-11 → `slice(10, 15)` → 2 usuarios
+
+**¿Por qué `Math.ceil`?**
+
+- Redondea hacia arriba para no perder usuarios de la última página parcial.
+- Ejemplo: 12 usuarios ÷ 5 por página = 2.4 → `Math.ceil(2.4)` = 3 páginas.
+
+## 3. Componente Pagination modularizado
+
+Se creó un componente reutilizable que recibe:
+
+- `currentPage`: página actual
+- `totalPages`: total de páginas
+- `onPreviousClick`: función para retroceder
+- `onNextClick`: función para avanzar
+
+```tsx
+<Pagination
+  currentPage={currentPage}
+  totalPages={totalPages}
+  onPreviousClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+  onNextClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+/>
+```
+
+## 4. Prevención de errores
+
+- **Botón "Anterior" deshabilitado** cuando `currentPage === 1`
+- **Botón "Siguiente" deshabilitado** cuando `currentPage === totalPages`
+- Uso de `Math.max` y `Math.min` para evitar páginas inválidas (<1 o >totalPages)
+
+## 5. Ventajas
+
+- Mejora el rendimiento al renderizar solo pocos usuarios a la vez
+- Código limpio y modular (lógica separada en componente)
+- Facilita navegación en listas grandes
+- Funciona correctamente con búsqueda/filtrado
+
+---
+
+# Búsqueda y filtrado de usuarios
+
+Se implementó un filtro de búsqueda para mejorar la experiencia de usuario al listar usuarios.
+
+## 1. Estado y componente de búsqueda
+
+- Se creó un estado `search` en el dashboard:
+
+```ts
+const [search, setSearch] = useState("");
+```
+
+- Se creó un componente reutilizable `SearchInput` que recibe `search` y `setSearch` como props:
+
+```tsx
+<SearchInput search={search} setSearch={setSearch} />
+```
+
+## 2. Filtrado de usuarios
+
+- Antes de renderizar la lista, se filtran los usuarios según el término de búsqueda:
+
+```ts
+const filteredUsers = users.filter((user) =>
+  user.name.toLowerCase().includes(search.toLowerCase()),
+);
+```
+
+- Solo se muestran los usuarios que coinciden con el término ingresado.
+
+## 3. Ventajas
+
+- Permite encontrar usuarios fácilmente en listas grandes.
+- El componente de búsqueda es reutilizable y desacoplado de la lógica de renderizado.
+- Mejora la experiencia y usabilidad del dashboard.
+
 # Control de roles y permisos en la UI
 
 Para asegurar que solo los usuarios con rol adecuado puedan modificar la información:

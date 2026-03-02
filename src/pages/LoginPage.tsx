@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 export default function LoginPage() {
   const [role, setRole] = useState("user");
@@ -14,6 +15,14 @@ export default function LoginPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen">
+      <div className="flex justify-end">
+        <Link
+          to="/"
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white"
+        >
+          Home
+        </Link>
+      </div>
       <h1 className="text-2xl font-bold mb-4">Login</h1>
       <select
         value={role}
