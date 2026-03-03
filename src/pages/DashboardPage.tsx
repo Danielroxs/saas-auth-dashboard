@@ -6,8 +6,9 @@ import SearchInput from "../components/SearchInput";
 import Pagination from "../components/Pagination";
 import { toast } from "react-toastify";
 import MetricCard from "../components/MetricCard";
-import type { Plan } from "../features/plans/types";
 import PlanCard from "../components/PlanCard";
+import PlanForm from "../components/PlanForm";
+import type { Plan } from "../features/plans/types";
 
 type User = {
   id: string;
@@ -27,7 +28,7 @@ export default function DashboardPage() {
 
   const [users, setUsers] = useState<User[]>([]);
 
-  const [plans] = useState<Plan[]>([
+  const [plans, setPlans] = useState<Plan[]>([
     {
       id: "1",
       name: "Básico",
@@ -51,6 +52,9 @@ export default function DashboardPage() {
     },
   ]);
 
+  const [editPlan, setEditPlan] = useState<Plan | null>(null);
+  const [isSavingPlan, setIsSavingPlan] = useState(false);
+
   const filteredUsers = users.filter((user) =>
     user.name.toLocaleLowerCase().includes(search.toLocaleLowerCase()),
   );
@@ -61,6 +65,34 @@ export default function DashboardPage() {
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+  const handleSavePlan = (payload: Omit<Plan, "id">) => {
+    setIsSavingPlan(true);
+    try {
+      if (editPlan) {
+        setPlans((prev) =>
+          prev.map((plan) =>
+            plan.id === editPlan.id ? { ...plan, ...payload } : plan,
+          ),
+        );
+        toast.success("Plan actualizado");
+      } else {
+        const newPlan: Plan = { id: crypto.randomUUID(), ...payload };
+        setPlans((prev) => [newPlan, ...prev]);
+        toast.success("Plan creado");
+      }
+      setEditPlan(null);
+    } finally {
+      setIsSavingPlan(false);
+    }
+  };
+
+  const handleDeletePlan = (id: string) => {
+    if (!window.confirm("¿Eliminar este plan?")) return;
+    setPlans((prev) => prev.filter((plan) => plan.id !== id));
+    if (editPlan?.id === id) setEditPlan(null);
+    toast.success("Plan eliminado");
+  };
 
   const handleCreateUser = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -200,13 +232,32 @@ export default function DashboardPage() {
 
       <section className="mb-12">
         <h2 className="text-2xl font-bold mt-8 mb-4">Planes</h2>
+
+        {role === "admin" && (
+          <PlanForm
+            key={editPlan?.id ?? "new-plan"}
+            plan={
+              editPlan
+                ? {
+                    name: editPlan.name,
+                    price: editPlan.price,
+                    description: editPlan.description,
+                    features: editPlan.features,
+                  }
+                : null
+            }
+            onSubmit={handleSavePlan}
+            loading={isSavingPlan}
+          />
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {plans.map((plan) => (
             <PlanCard
               key={plan.id}
               plan={plan}
-              onEdit={() => console.log("Editar plan")}
-              onDelete={() => console.log("Eliminar plan")}
+              onEdit={setEditPlan}
+              onDelete={handleDeletePlan}
               isAdmin={role === "admin"}
             />
           ))}
@@ -279,19 +330,12 @@ export default function DashboardPage() {
         />
       </section>
 
-      {role === "admin" && (
-        <button className="bg-green-600 text-white px-4 py-2 rounded mt-4">
-          Administrar Usuarios
-        </button>
-      )}
       <button
         onClick={handleLogout}
         className="bg-red-600 text-white px-4 py-2 rounded"
       >
         Cerrar
       </button>
-      {role === "admin" && <div>Seccion de metricas</div>}
-      {role === "user" && <div>Seccion exclusiva para usuarios</div>}
     </div>
   );
 }
