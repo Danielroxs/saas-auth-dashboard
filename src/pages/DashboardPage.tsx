@@ -9,6 +9,8 @@ import MetricCard from "../components/MetricCard";
 import PlanCard from "../components/PlanCard";
 import PlanForm from "../components/PlanForm";
 import type { Plan } from "../features/plans/types";
+import SideBar from "../components/Sidebar";
+import Topbar from "../components/Topbar";
 
 type User = {
   id: string;
@@ -197,145 +199,160 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="p-8 flex flex-col mx-auto max-w-6xl justify-center">
-      <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-      <p className="text-lg text-gray-600 mb-8">Rol actual: {role}</p>
+    <div className="flex h-screen overflow-hidden bg-gray-50">
+      <aside className="w-64 shrink-0 sticky top-0 h-screen">
+        <SideBar />
+      </aside>
 
-      <section className="mb-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard
-            label="Total Usuarios"
-            value={users.length}
-            icon="👥"
-            bgColor="bg-blue-50"
-          />
-          <MetricCard
-            label="Admins"
-            value="1"
-            icon="👑"
-            bgColor="bg-purple-50"
-          />
-          <MetricCard
-            label="Usuarios Regular"
-            value={users.length - 2}
-            icon="👤"
-            bgColor="bg-green-50"
-          />
-          <MetricCard
-            label="Activos Hoy"
-            value="15"
-            icon="🔥"
-            bgColor="bg-orange-50"
-          />
-        </div>
-      </section>
+      <div className="flex-1 flex flex-col">
+        <Topbar />
 
-      <section className="mb-12">
-        <h2 className="text-2xl font-bold mt-8 mb-4">Planes</h2>
+        <main className="flex-1 overflow-auto p-8 bg-gray-50">
+          <div className="p-8 flex flex-col mx-auto max-w-6xl justify-center">
+            <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
+            <p className="text-lg text-gray-600 mb-8">Rol actual: {role}</p>
 
-        {role === "admin" && (
-          <PlanForm
-            key={editPlan?.id ?? "new-plan"}
-            plan={
-              editPlan
-                ? {
-                    name: editPlan.name,
-                    price: editPlan.price,
-                    description: editPlan.description,
-                    features: editPlan.features,
+            <section className="mb-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <MetricCard
+                  label="Total Usuarios"
+                  value={users.length}
+                  icon="👥"
+                  bgColor="bg-blue-50"
+                />
+                <MetricCard
+                  label="Admins"
+                  value="1"
+                  icon="👑"
+                  bgColor="bg-purple-50"
+                />
+                <MetricCard
+                  label="Usuarios Regular"
+                  value={users.length - 2}
+                  icon="👤"
+                  bgColor="bg-green-50"
+                />
+                <MetricCard
+                  label="Activos Hoy"
+                  value="15"
+                  icon="🔥"
+                  bgColor="bg-orange-50"
+                />
+              </div>
+            </section>
+
+            <section className="mb-12">
+              <h2 className="text-2xl font-bold mt-8 mb-4">Planes</h2>
+
+              {role === "admin" && (
+                <PlanForm
+                  key={editPlan?.id ?? "new-plan"}
+                  plan={
+                    editPlan
+                      ? {
+                          name: editPlan.name,
+                          price: editPlan.price,
+                          description: editPlan.description,
+                          features: editPlan.features,
+                        }
+                      : null
                   }
-                : null
-            }
-            onSubmit={handleSavePlan}
-            loading={isSavingPlan}
-          />
-        )}
+                  onSubmit={handleSavePlan}
+                  loading={isSavingPlan}
+                />
+              )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-          {plans.map((plan) => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              onEdit={setEditPlan}
-              onDelete={handleDeletePlan}
-              isAdmin={role === "admin"}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Usuarios</h2>
-
-        <SearchInput search={search} setSearch={handleSearchChange} />
-
-        {filteredUsers.length === 0 ? (
-          <p className="text-gray-500 mt-4">
-            {search
-              ? "No se encontraron usuarios con ese nombre."
-              : "No hay usuarios disponibles."}
-          </p>
-        ) : (
-          <>
-            <ul className="mt-4">
-              {currentUsers.map((user) => (
-                <li key={user.id} className="mb-2 flex items-center gap-2">
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-8 rounded-full"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                {plans.map((plan) => (
+                  <PlanCard
+                    key={plan.id}
+                    plan={plan}
+                    onEdit={setEditPlan}
+                    onDelete={handleDeletePlan}
+                    isAdmin={role === "admin"}
                   />
-                  <span>{user.name}</span>
-                  {role === "admin" && (
-                    <>
-                      <button
-                        className="bg-yellow-500 text-white px-2 py-1 rounded"
-                        onClick={() => handleEditClick(user)}
+                ))}
+              </div>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-bold mb-6">Usuarios</h2>
+
+              <SearchInput search={search} setSearch={handleSearchChange} />
+
+              {filteredUsers.length === 0 ? (
+                <p className="text-gray-500 mt-4">
+                  {search
+                    ? "No se encontraron usuarios con ese nombre."
+                    : "No hay usuarios disponibles."}
+                </p>
+              ) : (
+                <>
+                  <ul className="mt-4">
+                    {currentUsers.map((user) => (
+                      <li
+                        key={user.id}
+                        className="mb-2 flex items-center gap-2"
                       >
-                        Editar
-                      </button>
-                      <button
-                        className="bg-red-600 text-white px-2 py-1 rounded ml-2"
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </>
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          className="w-8 rounded-full"
+                        />
+                        <span>{user.name}</span>
+                        {role === "admin" && (
+                          <>
+                            <button
+                              className="bg-yellow-500 text-white px-2 py-1 rounded"
+                              onClick={() => handleEditClick(user)}
+                            >
+                              Editar
+                            </button>
+                            <button
+                              className="bg-red-600 text-white px-2 py-1 rounded ml-2"
+                              onClick={() => handleDeleteUser(user.id)}
+                            >
+                              Eliminar
+                            </button>
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {totalPages > 1 && (
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={totalPages}
+                      onPreviousClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      onNextClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    />
                   )}
-                </li>
-              ))}
-            </ul>
+                </>
+              )}
 
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPreviousClick={() =>
-                  setCurrentPage((prev) => Math.max(prev - 1, 1))
-                }
-                onNextClick={() =>
-                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                }
+              <UserForm
+                user={newUser}
+                setUser={setNewUser}
+                loading={loading}
+                onSubmit={handleCreateUser}
+                editUser={editUser}
               />
-            )}
-          </>
-        )}
+            </section>
 
-        <UserForm
-          user={newUser}
-          setUser={setNewUser}
-          loading={loading}
-          onSubmit={handleCreateUser}
-          editUser={editUser}
-        />
-      </section>
-
-      <button
-        onClick={handleLogout}
-        className="bg-red-600 text-white px-4 py-2 rounded"
-      >
-        Cerrar
-      </button>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600 text-white px-4 py-2 rounded"
+            >
+              Cerrar
+            </button>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
